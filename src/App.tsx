@@ -8,13 +8,58 @@ import { PlusCircle } from '@phosphor-icons/react'
 import { useState } from 'react'
 import { TaskSummary } from './components/TaskSummary/TaskSummary'
 import { EmptyList } from './components/EmptyList/EmptyList'
+import { ITodoItem } from './model/ITodoItem'
+import { TaskItem } from './components/TaskItem/TaskItem'
 
 function App() {
 
-  const [inputValue, setInputValue] = useState('')
+  const [todoList, setTodoList] = useState<ITodoItem[]>([]);
+  const [inputValue, setInputValue] = useState('');
+
+  const checkedTasksCounter = todoList.reduce((prevValue, currentTask) => {
+    if (currentTask.completed) {
+      return prevValue + 1
+    }
+
+    return prevValue
+  }, 0)
 
   function handleAddTask() {
+    if (!inputValue) {
+      return
+    }
 
+    const newTask: ITodoItem = {
+      id: new Date().getTime(),
+      Content: inputValue,
+      completed: false,
+    }
+
+    setTodoList((state) => [...state, newTask]);
+    setInputValue('');
+  }
+
+  function handleRemoveTodoItem(id: number) {
+    const filteredTasks = todoList.filter((task) => task.id !== id)
+
+    if (!confirm('Deseja mesmo apagar essa tarefa?')) {
+      return
+    }
+
+    setTodoList(filteredTasks)
+  }
+
+  function handleToggleTodoItem({ id, value }: { id: number; value: boolean }) {
+    const updatedTasks = todoList.map((item) => {
+      if (item.id === id) {
+
+        item.completed = value;
+      }
+
+      return { ...item }
+    })
+
+    setTodoList(updatedTasks);
   }
 
   return (
@@ -34,9 +79,23 @@ function App() {
         </div>
 
         <div className={styles.tasksList}>
-          <TaskSummary tasksCounter={10} checkedTasksCounter={5}></TaskSummary>
+          <TaskSummary tasksCounter={todoList.length} checkedTasksCounter={checkedTasksCounter}></TaskSummary>
 
-          <EmptyList></EmptyList>
+          {todoList?.length > 0 ? (
+            <div>
+              {todoList.map((task) => (
+                <TaskItem
+                  key={task.id}
+                  todoItem={task}
+                  OnRemoveTask={handleRemoveTodoItem}
+                  OnToggleTaskStatus={handleToggleTodoItem}
+                />
+              ))}
+            </div>
+          ) : (
+            <EmptyList />
+          )}
+
         </div>
       </section>
 
